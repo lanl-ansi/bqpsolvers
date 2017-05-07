@@ -1,7 +1,7 @@
 # bqpsolvers
 
 Solver interfaces for bqpjson data files.
-See the header of each file for dependencies
+See the header of each file for dependencies.
 
 
 ### Solvers
