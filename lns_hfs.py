@@ -3,6 +3,7 @@
 ### Requirements ###
 # bqpjson v0.5 - pip install bqpjson
 # qubo (cli) - https://github.com/alex1770/QUBO-Chimera/ - commit cf627afbf501c7028659553272611a7e313da531
+# docker and the hfs_alg container are required for docker-based execution
 
 import sys, os, argparse, json, random
 
@@ -13,7 +14,7 @@ from collections import namedtuple
 
 import bqpjson
 
-
+HFS_DIR = 'hfs'
 Result = namedtuple('Result', ['nodes', 'objective', 'runtime'])
 
 # NOTE: this code assumes the HFS solver (i.e. "qubo") is in available in the local path
@@ -30,8 +31,11 @@ def main(args):
         print('only boolean domains are supported. Given %s' % data['variable_domain'])
         quit()
 
-    #TODO add file exists and resample check
-    tmp_hfs_file = 'tmp_{}.hfs'.format(random.randint(100000,999999))
+    if not os.path.exists(HFS_DIR):
+        os.makedirs(HFS_DIR)
+
+    tmp_hfs_file = '{}/tmp_{}.hfs'.format(HFS_DIR, random.randint(100000,999999))
+    #TODO add file exists check and resample if needed
 
     print('INFO: running bqp2hfs on {}'.format(args.input_file), file=sys.stderr)
     proc = Popen(['bqp2hfs'], stdout=PIPE, stderr=PIPE, stdin=open(args.input_file, 'r'))
@@ -67,10 +71,19 @@ def main(args):
 
     # print(err.getvalue())
 
+    if args.docker_run:
+        # assume that the hfs_alg container is available
+        volume_map = '{}:/{}'.format(os.path.abspath(HFS_DIR), HFS_DIR)
+        cmd = ['docker', 'run', '-v', volume_map, 'hfs_alg']
+    else:
+        # assume that the qubo executable is natively accessible
+        cmd = ['qubo']
+
     # s - seed
     # m0 - mode of operation, try to find minimum value by heuristic search
     # N - size of Chimera graph 
-    cmd = ['qubo', '-s', '0', '-m0', '-N', str(chimera_degree_effective)]
+    cmd.extend(['-s', '0', '-m0', '-N', str(chimera_degree_effective)])
+
     if args.runtime_limit != None:
         # t - min run time for some modes
         # T - max run time for some modes
@@ -132,6 +145,8 @@ def main(args):
 def build_cli_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--input-file', help='the data file to operate on (.json)')
+
+    parser.add_argument('-dr', '--docker-run', help='run in hfs_alg docker container', action='store_true', default=False)
 
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float)
 
