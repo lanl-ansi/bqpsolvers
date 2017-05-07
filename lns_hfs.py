@@ -2,7 +2,7 @@
 
 ### Requirements ###
 # bqpjson v0.5 - pip install bqpjson
-# qubo (cli) - https://github.com/alex1770/QUBO-Chimera/ - commit cf627afbf501c7028659553272611a7e313da531
+# qubo (cli) - https://github.com/lanl-ansi/HFS-algorithm 
 # docker and the hfs_alg container are required for docker-based execution
 
 import sys, os, argparse, json, random

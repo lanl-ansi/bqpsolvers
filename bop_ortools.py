@@ -2,7 +2,7 @@
 
 ### Requirements ###
 # bqpjson v0.5 - pip install bqpjson
-# ortools v1.5 - https://developers.google.com/optimization/ - installed and available by calling qubo
+# ortools v1.5 - https://developers.google.com/optimization/ 
 
 import sys, json, argparse
 
