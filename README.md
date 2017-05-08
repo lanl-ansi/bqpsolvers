@@ -27,3 +27,6 @@ There is an attempt to standardize the various solver's parameters via consisten
 ./lns_hfs.py -f test/data/ran1_b_1.json 
 ./bop_ortools.py -f test/data/ran1_b_1.json 
 ```
+
+### License
+bqpsolvers is developed at Los Alamos National Laboratory and is provided under a BSD-ish license with a "modifications must be indicated" clause.  See the `LICENSE.md` file for the full text.  This package is part of the Hybrid Quantum-Classical Computing suite, known internally as LA-CC-16-032.
