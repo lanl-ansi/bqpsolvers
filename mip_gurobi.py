@@ -3,6 +3,7 @@
 ### Requirements ###
 # bqpjson v0.5 - pip install bqpjson
 # gurobi v7.0 - http://www.gurobi.com/
+#
 
 import argparse, json, sys
 
@@ -77,25 +78,16 @@ def main(args):
     m._cut_count = 0
     m.optimize(cut_counter)
 
-    if False:
+    if args.show_solution:
         print('')
         for k,v in variable_lookup.items():
-            print('%s - %f' % (v.VarName, v.X))
-
-    if False:
-        print('')
-
-        if 'solutions' in data:
-            sol = data['solutions'][0]
-            print(sol['evaluation'])
-        # for v in variable_ids:
-        #     g_var = variable_lookup[(v,v)]
-        #     print('%s - %f' % (g_var.VarName, g_var.X))
-
+            print('{:<18}: {}'.format(v.VarName, v.X))
 
     lower_bound = m.MIPGap*m.ObjVal + m.ObjVal
     scaled_objective = data['scale']*(m.ObjVal+data['offset'])
     scaled_lower_bound = data['scale']*(lower_bound+data['offset'])
+
+    print('')
     print('BQP_DATA, %d, %d, %f, %f, %f, %f, %f, %d, %d' % (len(variable_ids), len(variable_product_ids), scaled_objective, scaled_lower_bound, m.ObjVal, lower_bound, m.Runtime, m._cut_count, m.NodeCount))
 
 
@@ -116,6 +108,7 @@ def build_cli_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--input-file', help='the data file to operate on (.json)')
 
+    parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
     parser.add_argument('-rtl', '--runtime-limit', help='gurobi runtime limit (sec.)', type=int)
     parser.add_argument('-tl', '--thread-limit', help='gurobi thread limit', type=int, default=1)
     parser.add_argument('-cuts', help='gurobi cuts parameter', type=int)
