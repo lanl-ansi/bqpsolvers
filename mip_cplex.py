@@ -5,8 +5,8 @@
 # cplex v12.7.0.0 - https://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/
 #
 
-### NOTE ###
-# these are good articles to refrence when using this formulation
+### Note ###
+# these are good articles to reference when using this solver
 #
 # @article{1306.1202,
 #   Author = {Sanjeeb Dash},
