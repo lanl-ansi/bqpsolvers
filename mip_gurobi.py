@@ -10,10 +10,6 @@ from gurobipy import *
 
 import bqpjson
 
-
-# tolerance for determining integrability of gurobi variables
-integrality_tol = 1e-6
-
 def main(args):
     if args.input_file == None:
         data = json.load(sys.stdin)
@@ -41,7 +37,6 @@ def main(args):
     if args.cuts != None:
         m.setParam('Cuts', args.cuts)
 
-    #m.setParam('Cuts', 3)
     #m.setParam('MIPFocus', 1)
     #m.setParam('MIPFocus', 2)
 
@@ -58,7 +53,13 @@ def main(args):
         m.addConstr(variable_lookup[(i,j)] <= variable_lookup[(i,i)])
         m.addConstr(variable_lookup[(i,j)] <= variable_lookup[(j,j)])
         #m.addGenConstrAnd(variable_lookup[(i,j)], [variable_lookup[(i,i)], variable_lookup[(j,j)]])
-        
+
+    spin_data = bqpjson.core.swap_variable_domain(data)
+    if len(spin_data['linear_terms']) <= 0 or all(lt['coeff'] == 0.0 for lt in spin_data['linear_terms']):
+        print('detected spin symmetry, adding symmetry breaking constraint')
+        v1 = data['variable_ids'][0]
+        m.addConstr(variable_lookup[(v1,v1)] == 0)
+
     obj = 0.0
     for lt in data['linear_terms']:
         i = lt['id']
