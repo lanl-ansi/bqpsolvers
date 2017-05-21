@@ -4,6 +4,35 @@
 # bqpjson v0.5 - pip install bqpjson
 # qubo (cli) - https://github.com/lanl-ansi/HFS-algorithm 
 # docker and the hfs_alg container are required for docker-based execution
+#
+
+### Note ###
+# these are good articles to reference when using this solver
+#
+# @misc{1409.3934,
+#   Author = {Alex Selby},
+#   Title = {Efficient subgraph-based sampling of Ising-type models with frustration},
+#   Year = {2014},
+#   Eprint = {arXiv:1409.3934},
+#   url = {https://arxiv.org/abs/1409.3934},
+# }
+#
+# @inproceedings{Hamze:2004:FT:1036843.1036873,
+#  author = {Hamze, Firas and de Freitas, Nando},
+#  title = {From Fields to Trees},
+#  booktitle = {Proceedings of the 20th Conference on Uncertainty in Artificial Intelligence},
+#  series = {UAI '04},
+#  year = {2004},
+#  isbn = {0-9749039-0-6},
+#  location = {Banff, Canada},
+#  pages = {243--250},
+#  numpages = {8},
+#  url = {http://dl.acm.org/citation.cfm?id=1036843.1036873},
+#  acmid = {1036873},
+#  publisher = {AUAI Press},
+#  address = {Arlington, Virginia, United States},
+# }
+#
 
 import sys, os, argparse, json, random
 

@@ -5,6 +5,31 @@
 # gurobi v7.0 - http://www.gurobi.com/
 #
 
+### NOTE ###
+# these are good articles to reference when using this solver
+#
+# @article{1306.1202,
+#   Author = {Sanjeeb Dash},
+#   Title = {A note on QUBO instances defined on Chimera graphs},
+#   Year = {2013},
+#   Eprint = {arXiv:1306.1202},
+#   url = {https://arxiv.org/abs/1612.05024}
+# }
+#
+# @Article{Billionnet2007,
+#   author="Billionnet, Alain and Elloumi, Sourour",
+#   title="Using a Mixed Integer Quadratic Programming Solver for the Unconstrained Quadratic 0-1 Problem",
+#   journal="Mathematical Programming",
+#   year="2007",
+#   volume="109",
+#   number="1",
+#   pages="55--68",
+#   issn="1436-4646",
+#   doi="10.1007/s10107-005-0637-9",
+#   url="http://dx.doi.org/10.1007/s10107-005-0637-9"
+# }
+#
+
 import argparse, json, sys
 
 from gurobipy import *
