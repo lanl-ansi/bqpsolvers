@@ -34,8 +34,35 @@ import argparse, json, sys
 
 import cplex
 from cplex.exceptions import CplexSolverError
+from cplex.callbacks import MIPInfoCallback
 
 import bqpjson
+
+
+class StatsCallback(MIPInfoCallback):
+    def __call__(self):
+        if not hasattr(self, 'cut_types'):
+            self.cut_types = [
+                MIPInfoCallback.cut_type.GUB_cover,
+                MIPInfoCallback.cut_type.MIR,
+                MIPInfoCallback.cut_type.clique,
+                MIPInfoCallback.cut_type.cover,
+                MIPInfoCallback.cut_type.disjunctive,
+                MIPInfoCallback.cut_type.flow_cover,
+                MIPInfoCallback.cut_type.flow_path,
+                MIPInfoCallback.cut_type.fractional,
+                MIPInfoCallback.cut_type.implied_bound,
+                MIPInfoCallback.cut_type.lift_and_project,
+                MIPInfoCallback.cut_type.multi_commodity_flow,
+                MIPInfoCallback.cut_type.solution_pool,
+                MIPInfoCallback.cut_type.table,
+                MIPInfoCallback.cut_type.user,
+                MIPInfoCallback.cut_type.zero_half
+            ]
+
+        self.cuts = sum(self.get_num_cuts(ct) for ct in self.cut_types)
+        self.nodes = self.get_num_nodes()
+
 
 def main(args):
     if args.input_file == None:
@@ -63,6 +90,7 @@ def main(args):
         coefficient_lookup[(i,j)] = qt['coeff']
 
     m = cplex.Cplex()
+    stats_cb = m.register_callback(StatsCallback)
 
     if args.runtime_limit != None:
         m.parameters.timelimit.set(args.runtime_limit)
@@ -115,6 +143,9 @@ def main(args):
         solution = m.solution
         #print(solution.get_quality_metrics())
         print('status: {} - {}'.format(solution.get_status(), solution.get_status_string()))
+        print('   gap: {}'.format(solution.MIP.get_mip_relative_gap()))
+        print('  cuts: {}'.format(stats_cb.cuts))
+        print(' nodes: {}'.format(stats_cb.nodes))
 
         if args.show_solution:
             print('')
@@ -123,15 +154,12 @@ def main(args):
                 print('{}: {}'.format(k, solution.get_values(v)))
 
         upper_bound = solution.get_objective_value()
-        if solution.get_status() == 101:
-            lower_bound = upper_bound
-        else:
-            lower_bound = float('-inf')
+        lower_bound = upper_bound*(1+solution.MIP.get_mip_relative_gap())
         scaled_upper_bound = data['scale']*(upper_bound+data['offset'])
         scaled_lower_bound = data['scale']*(lower_bound+data['offset'])
 
-        cut_count = -1
-        node_count = -1
+        cut_count = stats_cb.cuts
+        node_count = stats_cb.nodes
 
         print('')
         print('BQP_DATA, %d, %d, %f, %f, %f, %f, %f, %d, %d' % (len(variable_ids), len(variable_product_ids), scaled_upper_bound, scaled_lower_bound, upper_bound, lower_bound, runtime, cut_count, node_count))
@@ -151,5 +179,4 @@ def build_cli_parser():
 if __name__ == '__main__':
     parser = build_cli_parser()
     main(parser.parse_args())
-
 
