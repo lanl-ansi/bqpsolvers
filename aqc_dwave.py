@@ -32,9 +32,6 @@ def main(args):
     dw_solver_name = args.dw_solver_name
     dw_chip_id = None
 
-    print(args.config_file)
-    print(dw_token)
-
     if 'dw_url' in data['metadata']:
         dw_url = data['metadata']['dw_url'].encode('ascii','ignore')
         print('using d-wave url provided in data file: %s' % dw_url)
@@ -48,7 +45,7 @@ def main(args):
         print('found d-wave chip id in data file: %s' % dw_chip_id)
 
     if dw_url is None or dw_token is None or dw_solver_name is None:
-        print('dwave solver parameters not found')
+        print('d-wave solver parameters not found')
         quit()
 
     if args.dw_proxy is None: 
@@ -87,7 +84,7 @@ def main(args):
         'annealing_time': args.annealing_time
     }
 
-    print('dwave parameters:')
+    print('d-wave parameters:')
     for k,v in params.items():
         print('  {} - {}'.format(k,v))
 
