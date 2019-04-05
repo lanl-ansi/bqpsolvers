@@ -9,6 +9,7 @@ See the header of each file for dependencies.
 The current solver connectors are,
 
 * mip_gurobi.py - a MIP formulation of B-QP using gurobipy
+* miqp_gurobi.py - a MIQP formulation of B-QP using gurobipy
 * mip_cplex.py - a MIP formulation of B-QP using cplex
 * lns_hfs.py - an LNS formulation using the HFS solver
 * bop_ortools.py - a BOP formulation using or-tools
