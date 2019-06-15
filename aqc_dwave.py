@@ -1,17 +1,14 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 ### Requirements ###
 # bqpjson v0.5 - pip install bqpjson
-# dwave_sapi2 v2.6 - available in the qubist interface
+# dwave-cloud-client v0.5.4 - pip install dwave-cloud-client
 
 import argparse, json, time, os, sys
 
-from dwave_sapi2.remote import RemoteConnection
-from dwave_sapi2.core import solve_qubo
+import dwave.cloud as dc
 
 import bqpjson
-
-DEFAULT_CONFIG_FILE = '_config'
 
 def main(args):
     if args.input_file == None:
@@ -27,36 +24,27 @@ def main(args):
         quit()
 
     # A core assumption of this solver is that the given B-QP will magically be compatable with the given D-Wave QPU
-    dw_url = args.dw_url
-    dw_token = args.dw_token
-    dw_solver_name = args.dw_solver_name
+    dw_config = dc.config.load_config(os.getenv("HOME")+"/dwave.conf", profile=args.profile)
     dw_chip_id = None
 
-    if 'dw_url' in data['metadata']:
-        dw_url = data['metadata']['dw_url'].encode('ascii','ignore')
-        print('using d-wave url provided in data file: %s' % dw_url)
+    if 'dw_endpoint' in data['metadata']:
+        dw_config['endpoint'] = data['metadata']['dw_endpoint']
+        print('using d-wave endpoint provided in data file: %s' % dw_url)
 
     if 'dw_solver_name' in data['metadata']:
-        dw_solver_name = data['metadata']['dw_solver_name'].encode('ascii','ignore')
+        dw_config['solver'] = data['metadata']['dw_solver_name']
         print('using d-wave solver name provided in data file: %s' % dw_solver_name)
 
     if 'dw_chip_id' in data['metadata']:
-        dw_chip_id = data['metadata']['dw_chip_id'].encode('ascii','ignore')
+        dw_chip_id = data['metadata']['dw_chip_id']
         print('found d-wave chip id in data file: %s' % dw_chip_id)
 
-    if dw_url is None or dw_token is None or dw_solver_name is None:
-        print('d-wave solver parameters not found')
-        quit()
+    client = dc.Client.from_config(**dw_config)
+    solver = client.get_solver()
 
-    if args.dw_proxy is None: 
-        remote_connection = RemoteConnection(dw_url, dw_token)
-    else:
-        remote_connection = RemoteConnection(dw_url, dw_token, args.dw_proxy)
-
-    solver = remote_connection.get_solver(dw_solver_name)
     if not dw_chip_id is None:
         if solver.properties['chip_id'] != dw_chip_id:
-            print('WARNING: chip ids do not match.  data: %s  hardware: %s' % (dw_chip_id, solver.properties['chip_id']))
+            print('WARNING: qpu chip ids do not match.  data: %s  hardware: %s' % (dw_chip_id, solver.properties['chip_id']))
 
     couplers = solver.properties['couplers']
     sites = solver.properties['qubits']
@@ -80,7 +68,7 @@ def main(args):
     params = {
         'auto_scale': False,
         'num_reads': args.num_reads,
-        'num_spin_reversal_transforms': args.num_reads/args.spin_reversal_transform_rate,
+        'num_spin_reversal_transforms': int(args.num_reads/args.spin_reversal_transform_rate),
         'annealing_time': args.annealing_time
     }
 
@@ -89,7 +77,7 @@ def main(args):
         print('  {} - {}'.format(k,v))
 
     t0 = time.time()
-    answers = solve_qubo(solver, Q, **params)
+    answers = solver.sample_qubo(Q, **params)
     solve_time = time.time() - t0
 
     for i in range(len(answers['energies'])):
@@ -111,46 +99,11 @@ def main(args):
     print('BQP_DATA, %d, %d, %f, %f, %f, %f, %f, %d, %d' % (nodes, edges, scaled_objective, scaled_lower_bound, best_objective, lower_bound, best_runtime, 0, best_nodes))
 
 
-# loads a configuration file and sets up undefined CLI arguments
-def load_config(args):
-    config_file_path = args.config_file
-
-    if os.path.isfile(config_file_path):
-        with open(config_file_path, 'r') as config_file:
-            try:
-                config_data = json.load(config_file)
-                for key, value in config_data.items():
-                    if isinstance(value, dict) or isinstance(value, list):
-                        print('invalid value for configuration key "%s", only single values are allowed' % config_file_path)
-                        quit()
-                    if not hasattr(args, key) or getattr(args, key) == None:
-                        if isinstance(value, unicode):
-                            value = value.encode('ascii','ignore')
-                        setattr(args, key, value)
-                    else:
-                        print('skipping the configuration key "%s", it already has a value of %s' % (key, str(getattr(args, key))))
-                    #print(key, value)
-            except ValueError:
-                print('the config file does not appear to be a valid json document: %s' % config_file_path)
-                quit()
-    else:
-        if config_file_path != DEFAULT_CONFIG_FILE:
-            print('unable to open conifguration file: %s' % config_file_path)
-            quit()
-
-    return args
-
-
 def build_cli_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--input-file', help='the data file to operate on (.json)')
 
-    parser.add_argument('-cf', '--config-file', help='a configuration file for specifing common parameters', default=DEFAULT_CONFIG_FILE)
-
-    parser.add_argument('-url', '--dw-url', help='url of the d-wave machine')
-    parser.add_argument('-token', '--dw-token', help='token for accessing the d-wave machine')
-    parser.add_argument('-proxy', '--dw-proxy', help='proxy for accessing the d-wave machine')
-    parser.add_argument('-solver', '--dw-solver-name', help='d-wave solver to use', type=int)
+    parser.add_argument('-p', '--profile', help='connection details to load from dwave.conf', default=None)
 
     parser.add_argument('-nr', '--num-reads', help='the number of reads to take from the d-wave hardware', type=int, default=10000)
     parser.add_argument('-at', '--annealing-time', help='the annealing time of each d-wave sample', type=int, default=5)
@@ -161,7 +114,7 @@ def build_cli_parser():
 
 if __name__ == '__main__':
     parser = build_cli_parser()
-    main(load_config(parser.parse_args()))
+    main(parser.parse_args())
 
 
 
