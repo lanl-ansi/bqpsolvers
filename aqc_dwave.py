@@ -27,15 +27,15 @@ def main(args):
     dw_config = dc.config.load_config(os.getenv("HOME")+"/dwave.conf", profile=args.profile)
     dw_chip_id = None
 
-    if 'dw_endpoint' in data['metadata']:
+    if 'dw_endpoint' in data['metadata'] and not args.ignore_solver_metadata:
         dw_config['endpoint'] = data['metadata']['dw_endpoint']
-        print('using d-wave endpoint provided in data file: %s' % dw_url)
+        print('using d-wave endpoint provided in data file: %s' % dw_config['endpoint'])
 
-    if 'dw_solver_name' in data['metadata']:
+    if 'dw_solver_name' in data['metadata'] and not args.ignore_solver_metadata:
         dw_config['solver'] = data['metadata']['dw_solver_name']
-        print('using d-wave solver name provided in data file: %s' % dw_solver_name)
+        print('using d-wave solver name provided in data file: %s' % dw_config['solver'])
 
-    if 'dw_chip_id' in data['metadata']:
+    if 'dw_chip_id' in data['metadata'] and not args.ignore_solver_metadata:
         dw_chip_id = data['metadata']['dw_chip_id']
         print('found d-wave chip id in data file: %s' % dw_chip_id)
 
@@ -104,6 +104,7 @@ def build_cli_parser():
     parser.add_argument('-f', '--input-file', help='the data file to operate on (.json)')
 
     parser.add_argument('-p', '--profile', help='connection details to load from dwave.conf', default=None)
+    parser.add_argument('-ism', '--ignore-solver-metadata', help='connection details to load from dwave.conf', action='store_true', default=False)
 
     parser.add_argument('-nr', '--num-reads', help='the number of reads to take from the d-wave hardware', type=int, default=10000)
     parser.add_argument('-at', '--annealing-time', help='the annealing time of each d-wave sample', type=int, default=5)
