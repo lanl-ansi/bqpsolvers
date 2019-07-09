@@ -126,7 +126,7 @@ def build_cli_parser():
     parser.add_argument('-f', '--input-file', help='the data file to operate on (.json)')
 
     parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
-    parser.add_argument('-rtl', '--runtime-limit', help='gurobi runtime limit (sec.)', type=int)
+    parser.add_argument('-rtl', '--runtime-limit', help='gurobi runtime limit (sec.)', type=float)
     parser.add_argument('-tl', '--thread-limit', help='gurobi thread limit', type=int, default=1)
     parser.add_argument('-cuts', help='gurobi cuts parameter', type=int)
 
