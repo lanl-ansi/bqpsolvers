@@ -80,6 +80,8 @@ def main(args):
     answers = solver.sample_qubo(Q, **params)
     solve_time = time.time() - t0
 
+    client.close()
+
     for i in range(len(answers['energies'])):
         print('%f - %d' % (answers['energies'][i], answers['num_occurrences'][i]))
 
