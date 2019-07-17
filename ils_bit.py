@@ -6,23 +6,36 @@ from collections import namedtuple
 import bqpjson
 
 
-Model = namedtuple('Model', ['variables', 'linear', 'quadratic', 'adjacent'])
+Model = namedtuple('Model', ['variables', 'linear', 'quadratic', 'linear_list','adjacent'])
 
 
 def load_model(data):
-    variable = data['variable_ids']
+    variables = data['variable_ids']
     linear = {lt['id']:lt['coeff'] for lt in data['linear_terms']}
     quadratic = {(qt['id_tail'],qt['id_head']):qt['coeff'] for qt in data['quadratic_terms']}
-    adjacent = {}
+
+    # prepare for faster evaluation of flip_delta
+    linear_list = [0.0] * (max(variables) + 1) # list is faster than dict
+    for var, coeff in linear.items():
+        linear_list[var] = coeff
+    adjacent = [None] * (max(variables) + 1) # list is faster than dict
     for qt in data['quadratic_terms']:
         i, j, coeff = qt['id_tail'], qt['id_head'], qt['coeff']
-        adjacent.setdefault(i, []).append((j, coeff))
-        adjacent.setdefault(j, []).append((i, coeff))
-    return Model(variable, linear, quadratic, adjacent)
+        if adjacent[i] is None:
+            adjacent[i] = []
+        adjacent[i].append((j, coeff))
+        if adjacent[j] is None:
+            adjacent[j] = []
+        adjacent[j].append((i, coeff))
+
+    return Model(variables, linear, quadratic, linear_list, adjacent)
 
 
 def make_random_assignemnt(model):
-    return {var: random.choice([0.0,1.0]) for var in model.variables}
+    assignment = [None] * (max(model.variables) + 1) # list is faster than dict
+    for var in model.variables:
+        assignment[var] = random.choice([0.0,1.0])
+    return assignment
 
 
 def evaluate(model, assignment):
@@ -41,8 +54,7 @@ def flip(assignment, variable):
 def flip_delta(model, assignment, variable):
     delta = 0.0
     difference = 1.0 - 2.0 * assignment[variable]
-    if variable in model.linear:
-        delta += model.linear[variable] * difference
+    delta += model.linear_list[variable] * difference
     for i, coeff in model.adjacent[variable]:
         delta += coeff * assignment[i] * difference
     return delta
