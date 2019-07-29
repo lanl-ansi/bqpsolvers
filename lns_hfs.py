@@ -150,6 +150,11 @@ def main(args):
     print('INFO: found {} result lines'.format(len(results)), file=sys.stderr)
     assert(len(results) > 0)
 
+    if args.show_solution:
+        print('INFO: qubo solution', file=sys.stderr)
+        with open(tmp_sol_file) as f:
+            print(f.read(), file=sys.stderr)
+
     nodes = len(data['variable_ids'])
     edges = len(data['quadratic_terms'])
     
@@ -243,6 +248,8 @@ def build_cli_parser():
     parser.add_argument('-dr', '--docker-run', help='run in hfs_alg docker container', action='store_true', default=False)
 
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float)
+
+    parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
 
     return parser
 
