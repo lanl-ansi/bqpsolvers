@@ -34,7 +34,7 @@
 # }
 #
 
-import sys, os, argparse, json, random
+import sys, os, argparse, json, random, tempfile
 
 from subprocess import Popen
 from subprocess import PIPE
@@ -63,8 +63,8 @@ def main(args):
     if not os.path.exists(HFS_DIR):
         os.makedirs(HFS_DIR)
 
-    tmp_hfs_file = '{}/tmp_{}.hfs'.format(HFS_DIR, random.randint(100000,999999))
-    #TODO add file exists check and resample if needed
+    tmp_hfs_file = create_tmp_file(prefix='hfs')
+    tmp_sol_file = create_tmp_file(prefix='sol')
 
     print('INFO: running bqp2hfs on {}'.format(args.input_file), file=sys.stderr)
     proc = Popen(['bqp2hfs'], stdout=PIPE, stderr=PIPE, stdin=open(args.input_file, 'r'))
@@ -117,6 +117,7 @@ def main(args):
         # t - min run time for some modes
         # T - max run time for some modes
         cmd.extend(['-t', str(args.runtime_limit), '-T', str(args.runtime_limit+10)])
+    cmd.extend(['-O', tmp_sol_file])
     cmd.append(tmp_hfs_file)
 
     print('INFO: running command {}'.format(cmd), file=sys.stderr)
@@ -149,12 +150,6 @@ def main(args):
     print('INFO: found {} result lines'.format(len(results)), file=sys.stderr)
     assert(len(results) > 0)
 
-    print('INFO: removing file {}'.format(tmp_hfs_file), file=sys.stderr)
-    try:
-        os.remove(tmp_hfs_file)
-    except:
-        print('WARNING: removing file {} failed'.format(tmp_hfs_file), file=sys.stderr)
-
     nodes = len(data['variable_ids'])
     edges = len(data['quadratic_terms'])
     
@@ -168,7 +163,77 @@ def main(args):
     scaled_objective = scale*(best_objective+offset)
     scaled_lower_bound = scale*(lower_bound+offset)
 
+    verify_solution(tmp_hfs_file, tmp_sol_file, best_objective)
+
+    remove_tmp_file(tmp_hfs_file)
+    remove_tmp_file(tmp_sol_file)
+
     print('BQP_DATA, %d, %d, %f, %f, %f, %f, %f, %d, %d' % (nodes, edges, scaled_objective, scaled_lower_bound, best_objective, lower_bound, best_runtime, 0, best_nodes))
+
+
+def create_tmp_file(prefix=None):
+    fd, filename = tempfile.mkstemp(prefix=prefix, dir=HFS_DIR)
+    os.close(fd)
+    return filename
+
+
+def remove_tmp_file(filename):
+    print('INFO: removing file {}'.format(filename), file=sys.stderr)
+    try:
+        os.remove(filename)
+    except:
+        print('WARNING: removing file {} failed'.format(filename), file=sys.stderr)
+
+
+def verify_solution(tmp_hfs_file, tmp_sol_file, best_objective):
+    try:
+        problem = read_problem(tmp_hfs_file)
+    except:
+        print('WARNING: failed to verify solution. Cannot read problem file', file=sys.stderr)
+        return
+    try:
+        solution = read_solution(tmp_sol_file)
+    except:
+        print('WARNING: failed to verify solution. Cannot read solution file', file=sys.stderr)
+        return
+    energy = evaluate_energy(problem, solution)
+    if energy == best_objective:
+        print('INFO: solution verified', file=sys.stderr)
+    else:
+        print("WARNING: solution and objective do NOT match (solution's energy = {}, objective = {})".format(energy, best_objective), file=sys.stderr)
+
+
+def read_problem(path):
+    problem = {}
+    with open(path) as f:
+        next(f)
+        for line in f:
+            values = [int(w) for w in line.split()]
+            i, j = sorted([tuple(values[0:4]), tuple(values[4:8])])
+            weight = values[8]
+            problem[i, j] = weight
+    return problem
+
+
+def read_solution(path):
+    solution = {}
+    with open(path) as f:
+        for line in f:
+            values = [int(w) for w in line.split()]
+            site = tuple(values[0:4])
+            assignment = values[4]
+            solution[site] = assignment
+    return solution
+
+
+def evaluate_energy(problem, solution):
+    energy = 0.0
+    for (i, j), coeff in problem.items():
+        if i == j:
+            energy += coeff * solution[i]
+        else:
+            energy += coeff * solution[i] * solution[j]
+    return energy
 
 
 def build_cli_parser():
