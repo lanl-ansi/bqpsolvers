@@ -67,7 +67,7 @@ def main(args):
     tmp_sol_file = create_tmp_file(prefix='sol')
 
     print('INFO: running bqp2hfs on {}'.format(args.input_file), file=sys.stderr)
-    proc = Popen(['bqp2hfs'], stdout=PIPE, stderr=PIPE, stdin=open(args.input_file, 'r'))
+    proc = Popen(['bqp2hfs', '-p', str(args.precision)], stdout=PIPE, stderr=PIPE, stdin=open(args.input_file, 'r'))
     stdout, stderr = proc.communicate()
 
     stdout = stdout.decode('utf-8')
@@ -248,6 +248,8 @@ def build_cli_parser():
     parser.add_argument('-dr', '--docker-run', help='run in hfs_alg docker container', action='store_true', default=False)
 
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float)
+
+    parser.add_argument('-p', '--precision', help='precision of transforming the problem into HFS format', type=int, default=4)
 
     parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
 
