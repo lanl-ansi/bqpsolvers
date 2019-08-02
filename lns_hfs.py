@@ -225,7 +225,8 @@ def verify_hfs_solution(tmp_hfs_file, tmp_sol_file, hfs_objective):
     if energy == hfs_objective:
         print('INFO: HFS solution verified', file=sys.stderr)
     else:
-        print("WARNING: solution and HFS objective do NOT match (solution's energy = {}, HFS objective = {})".format(energy, hfs_objective), file=sys.stderr)
+        print("ERROR: solution and HFS objective do NOT match (solution's energy = {}, HFS objective = {})".format(energy, hfs_objective), file=sys.stderr)
+        quit()
 
 
 def evaluate_solution_in_bqpjson(bqpjson_data, tmp_sol_file):
