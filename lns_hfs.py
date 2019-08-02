@@ -63,8 +63,11 @@ def main(args):
     if not os.path.exists(HFS_DIR):
         os.makedirs(HFS_DIR)
 
-    tmp_hfs_file = create_tmp_file(prefix='hfs')
-    tmp_sol_file = create_tmp_file(prefix='sol')
+    tmp_hfs_file = create_tmp_file(prefix='hfs_')
+    tmp_sol_file = create_tmp_file(prefix='sol_')
+
+    print(tmp_hfs_file)
+    print(tmp_sol_file)
 
     print('INFO: running bqp2hfs on {}'.format(args.input_file), file=sys.stderr)
     proc = Popen(['bqp2hfs', '-p', str(args.precision)], stdout=PIPE, stderr=PIPE, stdin=open(args.input_file, 'r'))
@@ -194,6 +197,8 @@ def main(args):
 def create_tmp_file(prefix=None):
     fd, filename = tempfile.mkstemp(prefix=prefix, dir=HFS_DIR)
     os.close(fd)
+    filename_parts = filename.split(os.sep+HFS_DIR+os.sep)
+    filename = os.path.join(HFS_DIR, filename_parts[1])
     return filename
 
 
@@ -294,7 +299,7 @@ def build_cli_parser():
 
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float)
 
-    parser.add_argument('-p', '--precision', help='precision of transforming the problem into HFS format', type=int, default=4)
+    parser.add_argument('-p', '--precision', help='precision of transforming the problem into HFS format', type=int, default=3)
 
     parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
 

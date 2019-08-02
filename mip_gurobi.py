@@ -63,6 +63,7 @@ def main(args):
     if args.cuts != None:
         m.setParam('Cuts', args.cuts)
 
+    #m.setParam('Presolve', 2)
     #m.setParam('MIPFocus', 1)
     #m.setParam('MIPFocus', 2)
 
