@@ -76,11 +76,12 @@ def main(args):
     stdout = stdout.decode('utf-8')
     stderr = stderr.decode('utf-8')
 
-    print('INFO: bqp2hfs stderr', file=sys.stderr)
-    print(stderr, file=sys.stderr)
+    if args.show_input:
+        print('INFO: bqp2hfs stderr', file=sys.stderr)
+        print(stderr, file=sys.stderr)
 
-    print('INFO: bqp2hfs stdout', file=sys.stderr)
-    print(stdout, file=sys.stderr)
+        print('INFO: bqp2hfs stdout', file=sys.stderr)
+        print(stdout, file=sys.stderr)
 
     first_line = stdout.split('\n', 1)[0]
     chimera_degree_effective = int(first_line.split()[0])
@@ -303,6 +304,8 @@ def build_cli_parser():
     parser.add_argument('-p', '--precision', help='precision of transforming the problem into HFS format', type=int, default=3)
 
     parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
+
+    parser.add_argument('-si', '--show-input', help='print the input file', action='store_true', default=False)
 
     return parser
 
