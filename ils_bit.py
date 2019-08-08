@@ -106,7 +106,7 @@ def main(args):
         make_restart_assignment = make_all_zeros_assignemnt
     else:
         assert False
-    
+
     model = load_model(data)
     scale, offset = data['scale'], data['offset']
 
