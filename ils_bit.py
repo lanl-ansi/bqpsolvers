@@ -38,6 +38,20 @@ def make_random_assignemnt(model):
     return assignment
 
 
+def make_all_ones_assignemnt(model):
+    assignment = [None] * (max(model.variables) + 1) # list is faster than dict
+    for var in model.variables:
+        assignment[var] = 1.0
+    return assignment
+
+
+def make_all_zeros_assignemnt(model):
+    assignment = [None] * (max(model.variables) + 1) # list is faster than dict
+    for var in model.variables:
+        assignment[var] = 0.0
+    return assignment
+
+
 def evaluate(model, assignment):
     objective = 0.0
     for var, coeff in model.linear.items():
@@ -84,10 +98,19 @@ def main(args):
     if data['variable_domain'] != 'boolean':
         raise Exception('only boolean domains are supported. Given {}'.format(data['variable_domain']))
 
+    if args.initial_assignment == 'ran':
+        make_restart_assignment = make_random_assignemnt
+    elif args.initial_assignment == 'ones':
+        make_restart_assignment = make_all_ones_assignemnt
+    elif args.initial_assignment == 'zeros':
+        make_restart_assignment = make_all_zeros_assignemnt
+    else:
+        assert False
+    
     model = load_model(data)
     scale, offset = data['scale'], data['offset']
 
-    assignment = make_random_assignemnt(model)
+    assignment = make_restart_assignment(model)
     objective = evaluate(model, assignment)
     iterations = 1
     restarts = 0
@@ -98,7 +121,7 @@ def main(args):
     while time.process_time() < end_time:
         result = step(model, assignment, objective)
         if result is None: # restart
-            assignment = make_random_assignemnt(model)
+            assignment = make_restart_assignment(model)
             objective = evaluate(model, assignment)
             restarts += 1
         else: # move downward
@@ -137,6 +160,7 @@ def build_cli_parser():
     parser.add_argument('-so', '--show-objectives', help='print the objectives seen by the program', action='store_true', default=False)
     parser.add_argument('-sso', '--show-scaled-objectives', help='print the scaled objectives seen by the program', action='store_true', default=False)
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float, default=10)
+    parser.add_argument('-ia', '--initial_assignment', help='initial assignment when restarting', choices=['ran', 'ones', 'zeros'], default='ran')
     return parser
 
 
