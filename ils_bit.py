@@ -107,6 +107,9 @@ def main(args):
     else:
         assert False
 
+    if args.seed is not None:
+        random.seed(args.seed)
+
     model = load_model(data)
     scale, offset = data['scale'], data['offset']
 
@@ -161,6 +164,7 @@ def build_cli_parser():
     parser.add_argument('-sso', '--show-scaled-objectives', help='print the scaled objectives seen by the program', action='store_true', default=False)
     parser.add_argument('-rtl', '--runtime-limit', help='runtime limit (sec.)', type=float, default=10)
     parser.add_argument('-ia', '--initial_assignment', help='initial assignment when restarting', choices=['ran', 'ones', 'zeros'], default='ran')
+    parser.add_argument('-s', '--seed', help='random seed', type=int)
     return parser
 
 
