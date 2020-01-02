@@ -37,35 +37,44 @@ function main(parsed_args)
         Q[j, i] = c/2
     end
 
+    h = [0.0 for i in 1:n]
     for lt in data["linear_terms"]
         i = var_to_idx[lt["id"]]
         c = lt["coeff"]
-        Q[i,i] = c
-    end 
 
-    #println(Q)
-    #println(data["offset"])
+        h[i] = c
+    end
 
-    # v = [0 for i in 1:n]
-    # check_energy(Q, v)
+    # optional regularisation term
+    # for i in 1:n
+    #     Q[i,i] = 1e-4
+    # end
 
-    # v = [1 for i in 1:n]
-    # check_energy(Q, v)
+    #v = [0 for i in 1:n]
+    #check_encoding(h, Q, v)
 
-    # v = [mod(i,2) for i in 1:n]
-    # check_energy(Q, v)
+    #v = [1 for i in 1:n]
+    #check_encoding(h, Q, v, data)
 
-    # v = [1, 0, 0, 0, 1, 1, 0, 1]
-    # check_energy(Q, v)
+    #v = [mod(i,2) for i in 1:n]
+    #check_encoding(h, Q, v, data)
+
+    # tuneable paprameter
+    p = 0.1
 
     v = [0.5 for i in 1:n]
-    #v = [1, 0, 0, 0, 1, 1, 0, 1]
     time_start = time()
-    weights_final, energies = memristive_opt(Q, v, total_time=50)
+    #weights_final, energies = memristive_opt(Q, v, total_time=100, p=0.1)
+    weights_final, energies = memristive_opt(h, Q, p, v, total_time=100)
     time_elapsed = time() - time_start
 
-    println(weights_final)
-    println(energies .+ data["offset"])
+    println("energies trace: $energies")
+
+    println("final assignment: $weights_final")
+
+    assignment = Dict(idx_to_var[i] => weights_final[i] for i in 1:n)
+    energy = calc_energy(data, assignment)
+    println("final energy eval: $energy")
 
     nodes = length(data["variable_ids"])
     edges = length(data["quadratic_terms"])
@@ -76,7 +85,7 @@ function main(parsed_args)
     qt_lb = -sum(abs(qt["coeff"]) for qt in data["quadratic_terms"])/scale
     lower_bound = lt_lb+qt_lb
 
-    best_objective = energy(Q, weights_final)
+    best_objective = energy
     best_nodes = 0
     best_runtime = time_elapsed
     scaled_objective = scale*(best_objective+offset)
@@ -124,8 +133,16 @@ function memristive_opt(
 
     # Compute resistance change ratio
     ξ = p / 2α
+
+    #println(p, " ", α, " ", β, " ", ξ)
+    #display(Σ)
+    #S = β * inv(Σ) * (α/2 * ones(n, 1) + (p/2 + α * ξ/3) * diag(Σ) - expected_returns)
+    #println(S)
+
     # Compute Σ times applied voltages matrix
     ΣS = β * (α/2 * ones(n, 1) + (p/2 + α * ξ/3) * diag(Σ) - expected_returns)
+
+    #println(inv(Σ)*ΣS)
 
     for t in 1:total_time-1
         update = δt * (α * weights_series[:, t] - 1/β * (I(n) + ξ *
@@ -142,10 +159,6 @@ function memristive_opt(
 
     return weights_final, energies
 end
-
-"setup parameters for standard QUBO optimization"
-memristive_opt(Σ::Matrix{Float64}, weights_init::Vector{<:Real}; kwargs...) = memristive_opt([0.0 for i in 1:size(Σ,1)], Σ, 2.0, weights_init; kwargs...)
-
 
 
 """
@@ -170,14 +183,38 @@ function energy(
     -dot(expected_returns, weights) + p/2 * weights' * Σ * weights
 end
 
-"setup parameters for standard QUBO optimization"
-energy(Σ::Matrix{Float64}, weights::Vector{<:Real}) = energy([0.0 for i in 1:size(Σ,1)], Σ, 2.0, weights)
 
 "checks that qubo evalution matches energy function evaluation"
-function check_energy(Q, assignment)
-    eval_q = assignment' * Q * assignment
-    eval_energy = energy(Q, assignment)
+function check_encoding(h, Q, assignment, data)
+    eval_q = assignment' * Q * assignment - dot(h, assignment)
+    eval_energy = energy(h, Q, 2.0, assignment)
+    #println(eval_q, " ", eval_energy)
+
+    #eval_data = calc_energy(data, Dict(data["variable_ids"][i] => v for (i,v) in enumerate(assignment)))
+    #println(eval_q, " ", eval_energy, " ", eval_data)
     @assert(isapprox(eval_q, eval_energy))
+    #@assert(isapprox(eval_energy, eval_data))
+end
+
+
+"evaluate the enery function given a variable assignment"
+function calc_energy(data, assignment)::Float64
+    energy = 0.0
+    for qt in data["quadratic_terms"]
+        i = qt["id_head"]
+        j = qt["id_tail"]
+        c = qt["coeff"]
+        energy += c * assignment[i] * assignment[j]
+    end
+
+    for lt in data["linear_terms"]
+        i = lt["id"]
+        c = lt["coeff"]
+        energy += c * assignment[i]
+    end
+
+    #return data["scale"]*(energy+data["offset"])
+    return energy
 end
 
 
