@@ -68,13 +68,20 @@ function main(parsed_args)
     weights_final, energies = memristive_opt(h, Q, p, v, total_time=100)
     time_elapsed = time() - time_start
 
-    println("energies trace: $energies")
-
-    println("final assignment: $weights_final")
+    #println("energies trace: $energies")
+    #println("final assignment: $weights_final")
 
     assignment = Dict(idx_to_var[i] => weights_final[i] for i in 1:n)
     energy = calc_energy(data, assignment)
     println("final energy eval: $energy")
+
+    if parsed_args["show-solution"]
+        println()
+        for (i,v) in sort(collect(assignment), by=first)
+            println("$(i) - $(v)")
+        end
+    end
+
 
     nodes = length(data["variable_ids"])
     edges = length(data["quadratic_terms"])
@@ -225,7 +232,7 @@ function parse_commandline()
         "--input-file", "-f"
             help = "the data file to operate on (.json)"
             required = true
-        "--time-limit", "-t"
+        "--runtime-limit", "-t"
             help = "puts a time limit on the sovler"
             arg_type = Float64
         "--show-solution", "-s"
@@ -235,6 +242,10 @@ function parse_commandline()
 
     return parse_args(s)
 end
+
+#    parser.add_argument('-ss', '--show-solution', help='print the solution', action='store_true', default=False)
+#    parser.add_argument('-rtl', '--runtime-limit', help='gurobi runtime limit (sec.)', type=float)
+
 
 if isinteractive() == false
     main(parse_commandline())
